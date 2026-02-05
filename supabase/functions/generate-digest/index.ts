@@ -226,7 +226,7 @@ Return ONLY valid JSON, no other text.`;
       "Content-Type": "application/json",
       "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
       "HTTP-Referer": SUPABASE_URL,
-      "X-Title": "Readwise App",
+      "X-Title": "ReadZero",
     },
     body: JSON.stringify({
       model: LLM_MODEL,

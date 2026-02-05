@@ -652,7 +652,7 @@ async function extractWithJina(url: string): Promise<ExtractedData> {
 async function extractBasic(url: string): Promise<ExtractedData> {
   const response = await fetch(url, {
     headers: {
-      "User-Agent": "Mozilla/5.0 (compatible; ReadwiseBot/1.0)",
+      "User-Agent": "Mozilla/5.0 (compatible; ReadZeroBot/1.0)",
       "Accept": "text/html",
     },
   });
