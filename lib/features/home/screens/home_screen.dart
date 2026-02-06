@@ -9,6 +9,7 @@ import 'package:shimmer/shimmer.dart';
 import '../../../core/models/models.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../articles/providers/article_providers.dart';
+import '../../articles/widgets/source_placeholder.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -390,42 +391,34 @@ class _ArticleCardState extends ConsumerState<_ArticleCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Hero image
-                  if (article.imageUrl != null)
-                    AspectRatio(
-                      aspectRatio: 16 / 9,
-                      child: isProcessing
-                          ? Shimmer.fromColors(
-                              baseColor: isDark
-                                  ? Colors.grey[800]!
-                                  : Colors.grey[300]!,
-                              highlightColor: isDark
-                                  ? Colors.grey[700]!
-                                  : Colors.grey[100]!,
-                              child: Container(color: Colors.white),
-                            )
-                          : CachedNetworkImage(
-                              imageUrl: article.imageUrl!,
-                              fit: BoxFit.cover,
-                              placeholder: (_, __) => Container(
-                                color: isDark
-                                    ? const Color(0xFF2C2C2E)
-                                    : const Color(0xFFF3F4F6),
-                              ),
-                              errorWidget: (_, __, ___) => Container(
-                                color: isDark
-                                    ? const Color(0xFF2C2C2E)
-                                    : const Color(0xFFF3F4F6),
-                                child: Icon(
-                                  Icons.article_outlined,
-                                  color: isDark
-                                      ? const Color(0xFF6B7280)
-                                      : const Color(0xFF9CA3AF),
-                                  size: 32,
+                  // Hero image - always shown
+                  AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: isProcessing
+                        ? Shimmer.fromColors(
+                            baseColor: isDark
+                                ? Colors.grey[800]!
+                                : Colors.grey[300]!,
+                            highlightColor: isDark
+                                ? Colors.grey[700]!
+                                : Colors.grey[100]!,
+                            child: Container(color: Colors.white),
+                          )
+                        : article.imageUrl != null
+                            ? CachedNetworkImage(
+                                imageUrl: article.imageUrl!,
+                                fit: BoxFit.cover,
+                                placeholder: (_, __) => SourcePlaceholder(
+                                  url: article.url,
                                 ),
+                                errorWidget: (_, __, ___) => SourcePlaceholder(
+                                  url: article.url,
+                                ),
+                              )
+                            : SourcePlaceholder(
+                                url: article.url,
                               ),
-                            ),
-                    ),
+                  ),
 
                   // Content
                   Padding(

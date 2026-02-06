@@ -8,6 +8,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/models/models.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../articles/providers/article_providers.dart';
+import '../../articles/widgets/source_placeholder.dart';
 
 class DigestScreen extends ConsumerWidget {
   const DigestScreen({super.key});
@@ -357,29 +358,26 @@ class _DigestArticleTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Thumbnail
-            if (article.imageUrl != null)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: CachedNetworkImage(
-                  imageUrl: article.imageUrl!,
-                  width: 60,
-                  height: 60,
-                  fit: BoxFit.cover,
-                ),
-              )
-            else
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: context.borderColor,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  Icons.article_outlined,
-                  color: context.mutedTextColor,
-                ),
-              ),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: article.imageUrl != null
+                  ? CachedNetworkImage(
+                      imageUrl: article.imageUrl!,
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                      errorWidget: (_, __, ___) => SourcePlaceholder(
+                        url: article.url,
+                        width: 60,
+                        height: 60,
+                      ),
+                    )
+                  : SourcePlaceholder(
+                      url: article.url,
+                      width: 60,
+                      height: 60,
+                    ),
+            ),
             const SizedBox(width: 12),
 
             // Content

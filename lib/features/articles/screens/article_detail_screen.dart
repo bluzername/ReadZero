@@ -10,6 +10,7 @@ import '../../../core/models/models.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../articles/providers/article_providers.dart';
 import '../widgets/discover_card.dart';
+import '../widgets/source_placeholder.dart';
 
 /// Extract domain from URL for display
 String _extractDomain(String url) {
@@ -111,6 +112,9 @@ class _ArticleDetailScreenState extends ConsumerState<ArticleDetailScreen> {
                         CachedNetworkImage(
                           imageUrl: article.imageUrl!,
                           fit: BoxFit.cover,
+                          errorWidget: (_, __, ___) => SourcePlaceholder(
+                            url: article.url,
+                          ),
                         ),
                         // Gradient overlay
                         DecoratedBox(
@@ -125,6 +129,73 @@ class _ArticleDetailScreenState extends ConsumerState<ArticleDetailScreen> {
                             ),
                           ),
                         ),
+                        // Unsplash photographer attribution (required by Unsplash guidelines)
+                        if (article.imageSource == 'unsplash' && article.imageCredit != null)
+                          Positioned(
+                            right: 8,
+                            bottom: 8,
+                            child: GestureDetector(
+                              onTap: () {
+                                if (article.imageCredit!.profileUrl.isNotEmpty) {
+                                  launchUrl(Uri.parse(article.imageCredit!.profileUrl));
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.6),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'Photo by ',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.white.withOpacity(0.7),
+                                      ),
+                                    ),
+                                    Text(
+                                      article.imageCredit!.name,
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        decoration: TextDecoration.underline,
+                                        decorationColor: Colors.white70,
+                                      ),
+                                    ),
+                                    Text(
+                                      ' on ',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.white.withOpacity(0.7),
+                                      ),
+                                    ),
+                                    GestureDetector(
+                                      onTap: () => launchUrl(Uri.parse(
+                                        'https://unsplash.com/?utm_source=readzero&utm_medium=referral',
+                                      )),
+                                      child: const Text(
+                                        'Unsplash',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w600,
+                                          decoration: TextDecoration.underline,
+                                          decorationColor: Colors.white70,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   )

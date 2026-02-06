@@ -9,6 +9,8 @@ class Article {
   final String? description;
   final String? content; // Extracted markdown content
   final String? imageUrl;
+  final String? imageSource; // 'original', 'unsplash', or 'none'
+  final ImageCredit? imageCredit; // Unsplash photographer attribution
   final String? siteName;
   final String? author;
   final List<ArticleImage> images;
@@ -27,6 +29,8 @@ class Article {
     this.description,
     this.content,
     this.imageUrl,
+    this.imageSource,
+    this.imageCredit,
     this.siteName,
     this.author,
     this.images = const [],
@@ -47,6 +51,10 @@ class Article {
       description: json['description'] as String?,
       content: json['content'] as String?,
       imageUrl: json['image_url'] as String?,
+      imageSource: json['image_source'] as String?,
+      imageCredit: json['image_credit'] != null
+          ? ImageCredit.fromJson(json['image_credit'] as Map<String, dynamic>)
+          : null,
       siteName: json['site_name'] as String?,
       author: json['author'] as String?,
       images: (json['images'] as List<dynamic>?)
@@ -80,6 +88,8 @@ class Article {
         'description': description,
         'content': content,
         'image_url': imageUrl,
+        'image_source': imageSource,
+        'image_credit': imageCredit?.toJson(),
         'site_name': siteName,
         'author': author,
         'images': images.map((e) => e.toJson()).toList(),
@@ -99,6 +109,8 @@ class Article {
     String? description,
     String? content,
     String? imageUrl,
+    String? imageSource,
+    ImageCredit? imageCredit,
     String? siteName,
     String? author,
     List<ArticleImage>? images,
@@ -117,6 +129,8 @@ class Article {
       description: description ?? this.description,
       content: content ?? this.content,
       imageUrl: imageUrl ?? this.imageUrl,
+      imageSource: imageSource ?? this.imageSource,
+      imageCredit: imageCredit ?? this.imageCredit,
       siteName: siteName ?? this.siteName,
       author: author ?? this.author,
       images: images ?? this.images,
@@ -164,6 +178,35 @@ class ArticleImage {
         'alt': alt,
         'caption': caption,
         'ai_description': aiDescription,
+      };
+}
+
+/// Unsplash photographer credit for attribution
+class ImageCredit {
+  final String name;
+  final String username;
+  final String profileUrl;
+  final String photoUrl;
+
+  ImageCredit({
+    required this.name,
+    required this.username,
+    required this.profileUrl,
+    required this.photoUrl,
+  });
+
+  factory ImageCredit.fromJson(Map<String, dynamic> json) => ImageCredit(
+        name: json['name'] as String? ?? 'Unknown',
+        username: json['username'] as String? ?? '',
+        profileUrl: json['profile_url'] as String? ?? '',
+        photoUrl: json['photo_url'] as String? ?? '',
+      );
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'username': username,
+        'profile_url': profileUrl,
+        'photo_url': photoUrl,
       };
 }
 

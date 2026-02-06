@@ -11,6 +11,7 @@ const JINA_API_KEY = Deno.env.get("JINA_API_KEY");
 const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
 const TAVILY_API_KEY = Deno.env.get("TAVILY_API_KEY");
 const XAI_API_KEY = Deno.env.get("XAI_API_KEY");
+const UNSPLASH_ACCESS_KEY = Deno.env.get("UNSPLASH_ACCESS_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -155,6 +156,100 @@ function decodeHtmlEntities(text: string): string {
     .replace(/&nbsp;/g, ' ')
     .replace(/&#(\d+);/g, (_, num) => String.fromCharCode(parseInt(num, 10)))
     .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+}
+
+interface UnsplashResult {
+  imageUrl: string;
+  credit: {
+    name: string;
+    username: string;
+    profile_url: string;
+    photo_url: string;
+  };
+}
+
+// Fetch a fallback image from Unsplash when no article image is available
+// Returns image URL + photographer credit for proper attribution
+async function fetchUnsplashFallback(title: string, topics: string[]): Promise<UnsplashResult | null> {
+  if (!UNSPLASH_ACCESS_KEY) {
+    console.log("[unsplash] No UNSPLASH_ACCESS_KEY set, skipping fallback");
+    return null;
+  }
+
+  // Build search query from topics (first 2) or title words
+  let query: string;
+  if (topics.length > 0) {
+    query = topics.slice(0, 2).join(" ");
+  } else {
+    // Use first few meaningful words from title
+    query = title
+      .replace(/[^\w\s]/g, "")
+      .split(/\s+/)
+      .filter(w => w.length > 3)
+      .slice(0, 3)
+      .join(" ");
+  }
+
+  if (!query || query.length < 3) {
+    query = "technology"; // safe default
+  }
+
+  console.log(`[unsplash] Searching for: "${query}"`);
+
+  try {
+    const params = new URLSearchParams({
+      query,
+      per_page: "1",
+      orientation: "landscape",
+      content_filter: "high",
+    });
+
+    const response = await fetch(
+      `https://api.unsplash.com/search/photos?${params}`,
+      {
+        headers: {
+          Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}`,
+        },
+        signal: AbortSignal.timeout(5000),
+      }
+    );
+
+    if (!response.ok) {
+      console.error(`[unsplash] API error: ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+    const photo = data.results?.[0];
+    if (!photo?.urls?.regular) {
+      console.log("[unsplash] No results found");
+      return null;
+    }
+
+    // Trigger download endpoint (required by Unsplash API guidelines)
+    if (photo.links?.download_location) {
+      fetch(`${photo.links.download_location}?client_id=${UNSPLASH_ACCESS_KEY}`, {
+        signal: AbortSignal.timeout(3000),
+      }).catch(() => {}); // fire-and-forget, don't block
+    }
+
+    const user = photo.user || {};
+    const result: UnsplashResult = {
+      imageUrl: photo.urls.regular,
+      credit: {
+        name: user.name || "Unknown",
+        username: user.username || "",
+        profile_url: `https://unsplash.com/@${user.username || ""}?utm_source=readzero&utm_medium=referral`,
+        photo_url: `${photo.links?.html || "https://unsplash.com"}?utm_source=readzero&utm_medium=referral`,
+      },
+    };
+
+    console.log(`[unsplash] Found image by ${result.credit.name}: ${result.imageUrl.slice(0, 80)}...`);
+    return result;
+  } catch (e) {
+    console.error("[unsplash] Fetch failed:", e?.message || e);
+    return null;
+  }
 }
 
 serve(async (req) => {
@@ -478,7 +573,36 @@ serve(async (req) => {
       };
     }
 
-    // 5. Update article with analysis
+    // 5. Fetch Unsplash fallback image if no original image was extracted
+    let imageSource = "original";
+    let finalImageUrl = extracted.images?.[0]?.src || null;
+    let imageCredit = null;
+
+    if (!finalImageUrl) {
+      const topics = analysis?.topics || [];
+      const unsplashResult = await fetchUnsplashFallback(extracted.title || "", topics);
+      if (unsplashResult) {
+        finalImageUrl = unsplashResult.imageUrl;
+        imageSource = "unsplash";
+        imageCredit = unsplashResult.credit;
+        console.log(`[extract] Using Unsplash fallback image by ${imageCredit.name} for article ${article_id}`);
+      } else {
+        imageSource = "none";
+        console.log(`[extract] No image available for article ${article_id}`);
+      }
+
+      // Update image_url, image_source, and image_credit
+      await supabase
+        .from("articles")
+        .update({
+          image_url: finalImageUrl,
+          image_source: imageSource,
+          image_credit: imageCredit,
+        })
+        .eq("id", article_id);
+    }
+
+    // 6. Update article with analysis
     const finalUpdate = await supabase
       .from("articles")
       .update({
