@@ -404,7 +404,7 @@ class _ArticleCardState extends ConsumerState<_ArticleCard> {
                                 : Colors.grey[100]!,
                             child: Container(color: Colors.white),
                           )
-                        : article.imageUrl != null
+                        : article.imageUrl != null && article.imageSource != 'logo'
                             ? CachedNetworkImage(
                                 imageUrl: article.imageUrl!,
                                 fit: BoxFit.cover,
@@ -417,6 +417,7 @@ class _ArticleCardState extends ConsumerState<_ArticleCard> {
                               )
                             : SourcePlaceholder(
                                 url: article.url,
+                                logoUrl: article.imageSource == 'logo' ? article.imageUrl : null,
                               ),
                   ),
 

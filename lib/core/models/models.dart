@@ -442,6 +442,78 @@ class DigestArticle {
       };
 }
 
+/// AI-generated podcast episode from a daily digest
+class PodcastEpisode {
+  final String id;
+  final String userId;
+  final String? digestId;
+  final String title;
+  final String? description;
+  final String? audioUrl;
+  final String? audioPath;
+  final int? durationSeconds;
+  final String status; // pending, generating, ready, failed
+  final String? errorMessage;
+  final DateTime publishedAt;
+  final DateTime createdAt;
+
+  PodcastEpisode({
+    required this.id,
+    required this.userId,
+    this.digestId,
+    required this.title,
+    this.description,
+    this.audioUrl,
+    this.audioPath,
+    this.durationSeconds,
+    this.status = 'pending',
+    this.errorMessage,
+    required this.publishedAt,
+    required this.createdAt,
+  });
+
+  bool get isReady => status == 'ready' && audioUrl != null;
+  bool get isGenerating => status == 'pending' || status == 'generating';
+  bool get isFailed => status == 'failed';
+
+  String get formattedDuration {
+    if (durationSeconds == null) return '';
+    final mins = durationSeconds! ~/ 60;
+    final secs = durationSeconds! % 60;
+    return '${mins}:${secs.toString().padLeft(2, '0')}';
+  }
+
+  factory PodcastEpisode.fromJson(Map<String, dynamic> json) => PodcastEpisode(
+        id: json['id'] as String,
+        userId: json['user_id'] as String,
+        digestId: json['digest_id'] as String?,
+        title: json['title'] as String,
+        description: json['description'] as String?,
+        audioUrl: json['audio_url'] as String?,
+        audioPath: json['audio_path'] as String?,
+        durationSeconds: json['duration_seconds'] as int?,
+        status: json['status'] as String? ?? 'pending',
+        errorMessage: json['error_message'] as String?,
+        publishedAt: DateTime.parse(json['published_at'] as String),
+        createdAt: DateTime.parse(json['created_at'] as String),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'user_id': userId,
+        'digest_id': digestId,
+        'title': title,
+        'description': description,
+        'audio_url': audioUrl,
+        'audio_path': audioPath,
+        'duration_seconds': durationSeconds,
+        'status': status,
+        'error_message': errorMessage,
+        'published_at': publishedAt.toIso8601String(),
+        'created_at': createdAt.toIso8601String(),
+      };
+}
+
 /// User preferences and settings
 class UserSettings {
   final String id;
@@ -452,6 +524,7 @@ class UserSettings {
   final bool includeComments;
   final bool pushNotifications;
   final String? fcmToken;
+  final String? podcastToken;
 
   UserSettings({
     required this.id,
@@ -462,6 +535,7 @@ class UserSettings {
     this.includeComments = true,
     this.pushNotifications = true,
     this.fcmToken,
+    this.podcastToken,
   });
 
   factory UserSettings.fromJson(Map<String, dynamic> json) {
@@ -476,7 +550,13 @@ class UserSettings {
       includeComments: json['include_comments'] as bool? ?? true,
       pushNotifications: json['push_notifications'] as bool? ?? true,
       fcmToken: json['fcm_token'] as String?,
+      podcastToken: json['podcast_token'] as String?,
     );
+  }
+
+  String? get podcastFeedUrl {
+    if (podcastToken == null) return null;
+    return 'https://bioiacixxauufpvswlxe.supabase.co/functions/v1/podcast-feed?token=$podcastToken';
   }
 
   Map<String, dynamic> toJson() => {
@@ -499,6 +579,7 @@ class UserSettings {
     bool? includeComments,
     bool? pushNotifications,
     String? fcmToken,
+    String? podcastToken,
   }) => UserSettings(
     id: id ?? this.id,
     userId: userId ?? this.userId,
@@ -508,5 +589,6 @@ class UserSettings {
     includeComments: includeComments ?? this.includeComments,
     pushNotifications: pushNotifications ?? this.pushNotifications,
     fcmToken: fcmToken ?? this.fcmToken,
+    podcastToken: podcastToken ?? this.podcastToken,
   );
 }

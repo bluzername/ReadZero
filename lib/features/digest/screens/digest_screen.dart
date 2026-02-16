@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:just_audio/just_audio.dart';
 
 import '../../../core/models/models.dart';
 import '../../../core/theme/app_theme.dart';
@@ -289,6 +290,9 @@ class _DigestCard extends ConsumerWidget {
               ),
             ),
 
+            // Podcast Player
+            _PodcastPlayerSection(digestId: digest.id),
+
             // Articles preview
             const Divider(height: 1),
             Padding(
@@ -296,23 +300,10 @@ class _DigestCard extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ...digest.articles.take(3).map((article) => _DigestArticleTile(
+                  ...digest.articles.map((article) => _DigestArticleTile(
                         article: article,
                         onTap: () => context.push('/article/${article.articleId}'),
                       )),
-                  if (digest.articles.length > 3)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: TextButton(
-                        onPressed: () {
-                          // TODO: Show full digest view
-                        },
-                        child: Text(
-                          'View all ${digest.articles.length} articles',
-                          style: TextStyle(color: context.primaryColor),
-                        ),
-                      ),
-                    ),
                 ],
               ),
             ),
@@ -335,6 +326,349 @@ class _DigestCard extends ConsumerWidget {
     } else {
       return DateFormat.MMMEd().format(date);
     }
+  }
+}
+
+class _PodcastPlayerSection extends ConsumerWidget {
+  final String digestId;
+
+  const _PodcastPlayerSection({required this.digestId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final episodeAsync = ref.watch(podcastEpisodeForDigestProvider(digestId));
+
+    return episodeAsync.when(
+      data: (episode) {
+        if (episode == null) return const SizedBox.shrink();
+
+        if (episode.isGenerating) {
+          return _PodcastStatusCard(
+            icon: Icons.podcasts,
+            message: 'Generating your podcast...',
+            showProgress: true,
+          );
+        }
+
+        if (episode.isFailed) {
+          return _PodcastStatusCard(
+            icon: Icons.error_outline,
+            message: 'Podcast generation failed',
+            action: TextButton(
+              onPressed: () {
+                ref.read(supabaseServiceProvider).generatePodcast(digestId);
+                ref.invalidate(podcastEpisodeForDigestProvider(digestId));
+              },
+              child: const Text('Retry'),
+            ),
+          );
+        }
+
+        if (episode.isReady) {
+          return _PodcastPlayer(episode: episode);
+        }
+
+        return const SizedBox.shrink();
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+}
+
+class _PodcastStatusCard extends StatelessWidget {
+  final IconData icon;
+  final String message;
+  final bool showProgress;
+  final Widget? action;
+
+  const _PodcastStatusCard({
+    required this.icon,
+    required this.message,
+    this.showProgress = false,
+    this.action,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: context.isDark
+              ? Colors.purple.withOpacity(0.1)
+              : Colors.purple.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.purple.withOpacity(0.2)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: Colors.purple),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+            if (showProgress)
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            if (action != null) action!,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PodcastPlayer extends StatefulWidget {
+  final PodcastEpisode episode;
+
+  const _PodcastPlayer({required this.episode});
+
+  @override
+  State<_PodcastPlayer> createState() => _PodcastPlayerState();
+}
+
+class _PodcastPlayerState extends State<_PodcastPlayer> {
+  late AudioPlayer _player;
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _player = AudioPlayer();
+    _initAudio();
+  }
+
+  Future<void> _initAudio() async {
+    try {
+      await _player.setUrl(widget.episode.audioUrl!);
+      setState(() => _isLoading = false);
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _error = 'Failed to load audio';
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _player.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_error != null) {
+      return _PodcastStatusCard(
+        icon: Icons.error_outline,
+        message: _error!,
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: context.isDark
+              ? Colors.purple.withOpacity(0.1)
+              : Colors.purple.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.purple.withOpacity(0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header row
+            Row(
+              children: [
+                Icon(Icons.podcasts, size: 18, color: Colors.purple),
+                const SizedBox(width: 8),
+                Text(
+                  'Podcast',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const Spacer(),
+                if (widget.episode.durationSeconds != null)
+                  Text(
+                    widget.episode.formattedDuration,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: context.mutedTextColor,
+                        ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Play button + seek bar
+            if (_isLoading)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(8),
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              )
+            else
+              Row(
+                children: [
+                  // Play/Pause button
+                  StreamBuilder<PlayerState>(
+                    stream: _player.playerStateStream,
+                    builder: (context, snapshot) {
+                      final playerState = snapshot.data;
+                      final playing = playerState?.playing ?? false;
+                      final processingState = playerState?.processingState;
+
+                      if (processingState == ProcessingState.loading ||
+                          processingState == ProcessingState.buffering) {
+                        return const SizedBox(
+                          width: 40,
+                          height: 40,
+                          child: Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                        );
+                      }
+
+                      return GestureDetector(
+                        onTap: () {
+                          if (processingState == ProcessingState.completed) {
+                            _player.seek(Duration.zero);
+                            _player.play();
+                          } else if (playing) {
+                            _player.pause();
+                          } else {
+                            _player.play();
+                          }
+                        },
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.purple,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Icon(
+                            processingState == ProcessingState.completed
+                                ? Icons.replay
+                                : playing
+                                    ? Icons.pause
+                                    : Icons.play_arrow,
+                            color: Colors.white,
+                            size: 22,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 12),
+
+                  // Seek bar
+                  Expanded(
+                    child: StreamBuilder<Duration>(
+                      stream: _player.positionStream,
+                      builder: (context, posSnapshot) {
+                        final position = posSnapshot.data ?? Duration.zero;
+                        final duration = _player.duration ?? Duration.zero;
+
+                        return Column(
+                          children: [
+                            SliderTheme(
+                              data: SliderThemeData(
+                                trackHeight: 3,
+                                thumbShape: const RoundSliderThumbShape(
+                                  enabledThumbRadius: 6,
+                                ),
+                                overlayShape: const RoundSliderOverlayShape(
+                                  overlayRadius: 12,
+                                ),
+                                activeTrackColor: Colors.purple,
+                                inactiveTrackColor:
+                                    Colors.purple.withOpacity(0.2),
+                                thumbColor: Colors.purple,
+                              ),
+                              child: Slider(
+                                value: duration.inMilliseconds > 0
+                                    ? position.inMilliseconds
+                                        .clamp(0, duration.inMilliseconds)
+                                        .toDouble()
+                                    : 0,
+                                max: duration.inMilliseconds > 0
+                                    ? duration.inMilliseconds.toDouble()
+                                    : 1,
+                                onChanged: (value) {
+                                  _player.seek(
+                                    Duration(milliseconds: value.toInt()),
+                                  );
+                                },
+                              ),
+                            ),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    _formatDuration(position),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          fontSize: 11,
+                                          color: context.mutedTextColor,
+                                        ),
+                                  ),
+                                  Text(
+                                    _formatDuration(duration),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          fontSize: 11,
+                                          color: context.mutedTextColor,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDuration(Duration d) {
+    final mins = d.inMinutes;
+    final secs = d.inSeconds % 60;
+    return '$mins:${secs.toString().padLeft(2, '0')}';
   }
 }
 

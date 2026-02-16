@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -133,20 +134,61 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               ),
 
-              // Account Section
-              const _SectionHeader(title: 'Account'),
-              _SettingsTile(
-                icon: Icons.person_outline,
-                title: 'Sign In',
-                subtitle: 'Sync your library across devices',
-                onTap: () {
-                  // TODO: Auth flow
+              // Podcast Section
+              const _SectionHeader(title: 'Podcast'),
+              settingsAsync.when(
+                data: (settings) {
+                  final feedUrl = settings.podcastFeedUrl;
+                  if (feedUrl == null) {
+                    return _SettingsTile(
+                      icon: Icons.podcasts_outlined,
+                      title: 'Podcast Feed',
+                      subtitle: 'Save articles to generate your first podcast',
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Save some articles first — your podcast feed will appear here.'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                    );
+                  }
+                  return _SettingsTile(
+                    icon: Icons.podcasts_outlined,
+                    title: 'Your Podcast Feed',
+                    subtitle: 'Tap to copy RSS feed URL',
+                    onTap: () {
+                      Clipboard.setData(ClipboardData(text: feedUrl));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Podcast feed URL copied! Paste it in your podcast app.'),
+                          duration: Duration(seconds: 3),
+                        ),
+                      );
+                    },
+                  );
                 },
+                loading: () => _SettingsTile(
+                  icon: Icons.podcasts_outlined,
+                  title: 'Podcast Feed',
+                  subtitle: 'Loading...',
+                ),
+                error: (_, __) => _SettingsTile(
+                  icon: Icons.podcasts_outlined,
+                  title: 'Podcast Feed',
+                  subtitle: 'Unable to load',
+                ),
               ),
-              _SettingsTile(
-                icon: Icons.cloud_sync_outlined,
-                title: 'Sync Status',
-                subtitle: 'Last synced: Just now',
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'Add this URL to Apple Podcasts, Spotify, Overcast, or any podcast app via "Add by URL" to subscribe.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: context.mutedTextColor,
+                        fontSize: 12,
+                      ),
+                ),
               ),
 
               // Data Section
@@ -196,12 +238,18 @@ class SettingsScreen extends ConsumerWidget {
               _SettingsTile(
                 icon: Icons.description_outlined,
                 title: 'Privacy Policy',
-                onTap: () => launchUrl(Uri.parse(Env.privacyPolicyUrl)),
+                onTap: () => launchUrl(
+                  Uri.parse(Env.privacyPolicyUrl),
+                  mode: LaunchMode.inAppBrowserView,
+                ),
               ),
               _SettingsTile(
                 icon: Icons.article_outlined,
                 title: 'Terms of Service',
-                onTap: () => launchUrl(Uri.parse(Env.termsOfServiceUrl)),
+                onTap: () => launchUrl(
+                  Uri.parse(Env.termsOfServiceUrl),
+                  mode: LaunchMode.inAppBrowserView,
+                ),
               ),
 
               const SizedBox(height: 32),

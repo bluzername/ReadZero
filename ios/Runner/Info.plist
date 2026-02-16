@@ -47,5 +47,7 @@
 	<true/>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app does not access the microphone. This permission is required by an audio playback framework for podcast functionality.</string>
 </dict>
 </plist>

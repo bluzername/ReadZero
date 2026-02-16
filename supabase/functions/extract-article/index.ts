@@ -504,7 +504,10 @@ serve(async (req) => {
     // Skip analysis for fallback/error content
     const isFallbackContent = extracted.content?.includes("cannot be extracted") ||
                               extracted.content?.includes("requires a subscription") ||
-                              extracted.content?.includes("requires login");
+                              extracted.content?.includes("requires login") ||
+                              extracted.content?.includes("could not be extracted") ||
+                              extracted.content?.includes("Extraction failed") ||
+                              extracted.content?.includes("Tap to open in browser");
     let analysis = null;
     console.log(`[extract] About to analyze. OPENROUTER_API_KEY set: ${!!OPENROUTER_API_KEY}, content length: ${extracted.content?.length}, isFallback: ${isFallbackContent}`);
 
@@ -579,16 +582,31 @@ serve(async (req) => {
     let imageCredit = null;
 
     if (!finalImageUrl) {
-      const topics = analysis?.topics || [];
-      const unsplashResult = await fetchUnsplashFallback(extracted.title || "", topics);
-      if (unsplashResult) {
-        finalImageUrl = unsplashResult.imageUrl;
-        imageSource = "unsplash";
-        imageCredit = unsplashResult.credit;
-        console.log(`[extract] Using Unsplash fallback image by ${imageCredit.name} for article ${article_id}`);
+      if (isFallbackContent) {
+        // For failed extractions, use site favicon instead of Unsplash
+        // (Unsplash would search with garbage title/topic data and return irrelevant photos)
+        try {
+          const domain = new URL(url).hostname;
+          finalImageUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+          imageSource = "logo";
+          console.log(`[extract] Using site favicon for failed extraction: ${domain}`);
+        } catch {
+          imageSource = "none";
+          console.log(`[extract] Could not construct favicon URL for ${url}`);
+        }
       } else {
-        imageSource = "none";
-        console.log(`[extract] No image available for article ${article_id}`);
+        // Normal article without image - try Unsplash
+        const topics = analysis?.topics || [];
+        const unsplashResult = await fetchUnsplashFallback(extracted.title || "", topics);
+        if (unsplashResult) {
+          finalImageUrl = unsplashResult.imageUrl;
+          imageSource = "unsplash";
+          imageCredit = unsplashResult.credit;
+          console.log(`[extract] Using Unsplash fallback image by ${imageCredit.name} for article ${article_id}`);
+        } else {
+          imageSource = "none";
+          console.log(`[extract] No image available for article ${article_id}`);
+        }
       }
 
       // Update image_url, image_source, and image_credit

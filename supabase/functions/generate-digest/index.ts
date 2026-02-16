@@ -76,6 +76,9 @@ serve(async (req) => {
 
           if (digest) {
             results.push({ user_id: userId, success: true, digest_id: digest.id });
+
+            // Trigger podcast generation (fire-and-forget)
+            triggerPodcastGeneration(userId, digest.id);
           } else {
             results.push({ user_id: userId, success: true, skipped: "no articles" });
           }
@@ -110,6 +113,9 @@ serve(async (req) => {
 
             // Send push notification if enabled
             await sendPushNotification(supabase, user.user_id, digest);
+
+            // Trigger podcast generation (fire-and-forget)
+            triggerPodcastGeneration(user.user_id, digest.id);
           } else {
             results.push({ user_id: user.user_id, success: true, skipped: "no articles" });
           }
@@ -273,6 +279,28 @@ Return ONLY valid JSON, no other text.`;
   if (insertError) throw insertError;
 
   return digest;
+}
+
+function triggerPodcastGeneration(userId: string, digestId: string): void {
+  // Fire-and-forget: call the generate-podcast Edge Function
+  fetch(`${SUPABASE_URL}/functions/v1/generate-podcast`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+    },
+    body: JSON.stringify({ user_id: userId, digest_id: digestId }),
+  })
+    .then((res) => {
+      if (!res.ok) {
+        console.error(`[digest] Podcast generation failed for ${userId}: ${res.status}`);
+      } else {
+        console.log(`[digest] Podcast generation triggered for ${userId}`);
+      }
+    })
+    .catch((e) => {
+      console.error(`[digest] Failed to trigger podcast generation: ${e.message}`);
+    });
 }
 
 async function sendPushNotification(

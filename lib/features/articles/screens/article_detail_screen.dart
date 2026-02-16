@@ -103,8 +103,8 @@ class _ArticleDetailScreenState extends ConsumerState<ArticleDetailScreen> {
           SliverAppBar(
             floating: true,
             pinned: true,
-            expandedHeight: article.imageUrl != null ? 250 : 0,
-            flexibleSpace: article.imageUrl != null
+            expandedHeight: article.imageUrl != null && article.imageSource != 'logo' ? 250 : 0,
+            flexibleSpace: article.imageUrl != null && article.imageSource != 'logo'
                 ? FlexibleSpaceBar(
                     background: Stack(
                       fit: StackFit.expand,

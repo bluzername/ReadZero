@@ -402,4 +402,39 @@ class SupabaseService {
     final digests = await _client!.from('digests').select().eq('user_id', userId!);
     return {'exported_at': DateTime.now().toIso8601String(), 'articles': articles, 'digests': digests};
   }
+
+  // ============ Podcast ============
+
+  /// Watch all podcast episodes for current user
+  Stream<List<PodcastEpisode>> watchPodcastEpisodes() {
+    if (_client == null || userId == null) return Stream.value([]);
+    return _client!
+        .from('podcast_episodes')
+        .stream(primaryKey: ['id'])
+        .eq('user_id', userId!)
+        .order('published_at', ascending: false)
+        .map((data) => data.map((e) => PodcastEpisode.fromJson(e)).toList());
+  }
+
+  /// Get podcast episode for a specific digest
+  Future<PodcastEpisode?> getEpisodeForDigest(String digestId) async {
+    if (_client == null || userId == null) return null;
+    final response = await _client!
+        .from('podcast_episodes')
+        .select()
+        .eq('user_id', userId!)
+        .eq('digest_id', digestId)
+        .maybeSingle();
+    if (response == null) return null;
+    return PodcastEpisode.fromJson(response);
+  }
+
+  /// Trigger podcast generation for a digest
+  Future<void> generatePodcast(String digestId) async {
+    if (_client == null || userId == null) return;
+    await _client!.functions.invoke('generate-podcast', body: {
+      'user_id': userId,
+      'digest_id': digestId,
+    });
+  }
 }

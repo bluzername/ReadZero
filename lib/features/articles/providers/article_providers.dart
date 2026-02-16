@@ -102,3 +102,13 @@ final unreadArticlesCountProvider = Provider<int>((ref) {
     error: (_, __) => 0,
   );
 });
+
+/// Stream of all podcast episodes
+final podcastEpisodesStreamProvider = StreamProvider<List<PodcastEpisode>>((ref) {
+  return ref.read(supabaseServiceProvider).watchPodcastEpisodes();
+});
+
+/// Podcast episode for a specific digest
+final podcastEpisodeForDigestProvider = FutureProvider.family<PodcastEpisode?, String>((ref, digestId) {
+  return ref.read(supabaseServiceProvider).getEpisodeForDigest(digestId);
+});

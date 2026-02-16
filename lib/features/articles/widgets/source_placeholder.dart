@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// Branded gradient placeholder shown when an article has no image.
 /// Displays a source-appropriate icon and domain text.
@@ -6,12 +7,14 @@ class SourcePlaceholder extends StatelessWidget {
   final String url;
   final double? width;
   final double? height;
+  final String? logoUrl;
 
   const SourcePlaceholder({
     super.key,
     required this.url,
     this.width,
     this.height,
+    this.logoUrl,
   });
 
   @override
@@ -32,11 +35,26 @@ class SourcePlaceholder extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            source.icon,
-            size: height != null && height! < 80 ? 20 : 32,
-            color: Colors.white.withOpacity(0.9),
-          ),
+          if (logoUrl != null)
+            // Use the provided logo URL directly
+            _FaviconIcon(
+              faviconUrl: logoUrl!,
+              fallbackIcon: source.icon,
+              size: height != null && height! < 80 ? 20 : 32,
+            )
+          else if (source.isGeneric)
+            // Generic source - try loading favicon from Google API
+            _FaviconIcon(
+              faviconUrl: _buildFaviconUrl(url),
+              fallbackIcon: source.icon,
+              size: height != null && height! < 80 ? 20 : 32,
+            )
+          else
+            Icon(
+              source.icon,
+              size: height != null && height! < 80 ? 20 : 32,
+              color: Colors.white.withOpacity(0.9),
+            ),
           if (height == null || height! >= 80) ...[
             const SizedBox(height: 8),
             Text(
@@ -52,6 +70,15 @@ class SourcePlaceholder extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  static String _buildFaviconUrl(String url) {
+    try {
+      final domain = Uri.parse(url).host;
+      return 'https://www.google.com/s2/favicons?domain=$domain&sz=128';
+    } catch (_) {
+      return '';
+    }
   }
 
   static _SourceInfo _detectSource(String url) {
@@ -112,6 +139,7 @@ class SourcePlaceholder extends StatelessWidget {
       label: _extractDomain(url),
       gradientLight: [const Color(0xFF6366F1), const Color(0xFF4F46E5)],
       gradientDark: [const Color(0xFF3730A3), const Color(0xFF312E81)],
+      isGeneric: true,
     );
   }
 
@@ -125,16 +153,58 @@ class SourcePlaceholder extends StatelessWidget {
   }
 }
 
+/// Loads a favicon via CachedNetworkImage, falling back to a Material icon.
+class _FaviconIcon extends StatelessWidget {
+  final String faviconUrl;
+  final IconData fallbackIcon;
+  final double size;
+
+  const _FaviconIcon({
+    required this.faviconUrl,
+    required this.fallbackIcon,
+    required this.size,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (faviconUrl.isEmpty) {
+      return Icon(
+        fallbackIcon,
+        size: size,
+        color: Colors.white.withOpacity(0.9),
+      );
+    }
+
+    return CachedNetworkImage(
+      imageUrl: faviconUrl,
+      width: size,
+      height: size,
+      placeholder: (_, __) => Icon(
+        fallbackIcon,
+        size: size,
+        color: Colors.white.withOpacity(0.9),
+      ),
+      errorWidget: (_, __, ___) => Icon(
+        fallbackIcon,
+        size: size,
+        color: Colors.white.withOpacity(0.9),
+      ),
+    );
+  }
+}
+
 class _SourceInfo {
   final IconData icon;
   final String label;
   final List<Color> gradientLight;
   final List<Color> gradientDark;
+  final bool isGeneric;
 
   const _SourceInfo({
     required this.icon,
     required this.label,
     required this.gradientLight,
     required this.gradientDark,
+    this.isGeneric = false,
   });
 }
