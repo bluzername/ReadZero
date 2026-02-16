@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/home/screens/home_screen.dart';
@@ -7,6 +8,7 @@ import '../../features/digest/screens/digest_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../../features/settings/screens/archive_screen.dart';
 import '../../features/auth/screens/web_login_screen.dart';
+import '../../features/podcast/mini_player_widget.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -60,16 +62,22 @@ final appRouter = GoRouter(
   ],
 );
 
-class MainShell extends StatelessWidget {
+class MainShell extends ConsumerWidget {
   final Widget child;
-  
+
   const MainShell({super.key, required this.child});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       body: child,
-      bottomNavigationBar: const _BottomNav(),
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: const [
+          MiniPlayer(),
+          _BottomNav(),
+        ],
+      ),
     );
   }
 }

@@ -180,6 +180,24 @@ class SettingsScreen extends ConsumerWidget {
                   subtitle: 'Unable to load',
                 ),
               ),
+              settingsAsync.when(
+                data: (settings) {
+                  final feedUrl = settings.podcastFeedUrl;
+                  if (feedUrl == null) return const SizedBox.shrink();
+                  // Strip the scheme to build podcast:// URL
+                  final feedWithoutScheme = feedUrl.replaceFirst(RegExp(r'^https?://'), '');
+                  return _SettingsTile(
+                    icon: Icons.apple,
+                    title: 'Open in Apple Podcasts',
+                    subtitle: 'Subscribe to your feed in Apple Podcasts',
+                    onTap: () => launchUrl(
+                      Uri.parse('podcast://$feedWithoutScheme'),
+                    ),
+                  );
+                },
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+              ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(

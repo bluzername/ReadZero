@@ -10,6 +10,7 @@ import '../../../core/models/models.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../articles/providers/article_providers.dart';
 import '../../articles/widgets/source_placeholder.dart';
+import '../../podcast/podcast_player_provider.dart';
 
 class DigestScreen extends ConsumerWidget {
   const DigestScreen({super.key});
@@ -426,51 +427,23 @@ class _PodcastStatusCard extends StatelessWidget {
   }
 }
 
-class _PodcastPlayer extends StatefulWidget {
+class _PodcastPlayer extends ConsumerWidget {
   final PodcastEpisode episode;
 
   const _PodcastPlayer({required this.episode});
 
   @override
-  State<_PodcastPlayer> createState() => _PodcastPlayerState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final playerState = ref.watch(podcastPlayerProvider);
+    final notifier = ref.read(podcastPlayerProvider.notifier);
+    final player = notifier.player;
+    final isThisEpisode = playerState.episode?.id == episode.id;
+    final isLoading = isThisEpisode && playerState.isLoading;
 
-class _PodcastPlayerState extends State<_PodcastPlayer> {
-  late AudioPlayer _player;
-  bool _isLoading = true;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _player = AudioPlayer();
-    _initAudio();
-  }
-
-  Future<void> _initAudio() async {
-    try {
-      await _player.setUrl(widget.episode.audioUrl!);
-      setState(() => _isLoading = false);
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _error = 'Failed to load audio';
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _player.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_error != null) {
+    if (isThisEpisode && playerState.error != null) {
       return _PodcastStatusCard(
         icon: Icons.error_outline,
-        message: _error!,
+        message: playerState.error!,
       );
     }
 
@@ -500,9 +473,9 @@ class _PodcastPlayerState extends State<_PodcastPlayer> {
                       ),
                 ),
                 const Spacer(),
-                if (widget.episode.durationSeconds != null)
+                if (episode.durationSeconds != null)
                   Text(
-                    widget.episode.formattedDuration,
+                    episode.formattedDuration,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: context.mutedTextColor,
                         ),
@@ -512,7 +485,7 @@ class _PodcastPlayerState extends State<_PodcastPlayer> {
             const SizedBox(height: 12),
 
             // Play button + seek bar
-            if (_isLoading)
+            if (isLoading)
               const Center(
                 child: Padding(
                   padding: EdgeInsets.all(8),
@@ -523,16 +496,36 @@ class _PodcastPlayerState extends State<_PodcastPlayer> {
                   ),
                 ),
               )
+            else if (!isThisEpisode)
+              // Episode not yet loaded in global player — show play button
+              Center(
+                child: GestureDetector(
+                  onTap: () => notifier.play(episode),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.purple,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Icon(
+                      Icons.play_arrow,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                ),
+              )
             else
               Row(
                 children: [
                   // Play/Pause button
                   StreamBuilder<PlayerState>(
-                    stream: _player.playerStateStream,
+                    stream: player.playerStateStream,
                     builder: (context, snapshot) {
-                      final playerState = snapshot.data;
-                      final playing = playerState?.playing ?? false;
-                      final processingState = playerState?.processingState;
+                      final state = snapshot.data;
+                      final playing = state?.playing ?? false;
+                      final processingState = state?.processingState;
 
                       if (processingState == ProcessingState.loading ||
                           processingState == ProcessingState.buffering) {
@@ -552,12 +545,12 @@ class _PodcastPlayerState extends State<_PodcastPlayer> {
                       return GestureDetector(
                         onTap: () {
                           if (processingState == ProcessingState.completed) {
-                            _player.seek(Duration.zero);
-                            _player.play();
+                            player.seek(Duration.zero);
+                            player.play();
                           } else if (playing) {
-                            _player.pause();
+                            notifier.pause();
                           } else {
-                            _player.play();
+                            notifier.resume();
                           }
                         },
                         child: Container(
@@ -585,10 +578,10 @@ class _PodcastPlayerState extends State<_PodcastPlayer> {
                   // Seek bar
                   Expanded(
                     child: StreamBuilder<Duration>(
-                      stream: _player.positionStream,
+                      stream: player.positionStream,
                       builder: (context, posSnapshot) {
                         final position = posSnapshot.data ?? Duration.zero;
-                        final duration = _player.duration ?? Duration.zero;
+                        final duration = player.duration ?? Duration.zero;
 
                         return Column(
                           children: [
@@ -616,7 +609,7 @@ class _PodcastPlayerState extends State<_PodcastPlayer> {
                                     ? duration.inMilliseconds.toDouble()
                                     : 1,
                                 onChanged: (value) {
-                                  _player.seek(
+                                  notifier.seek(
                                     Duration(milliseconds: value.toInt()),
                                   );
                                 },
