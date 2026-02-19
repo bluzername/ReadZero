@@ -1,5 +1,6 @@
 import Flutter
 import UIKit
+import UserNotifications
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -14,6 +15,9 @@ import UIKit
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
         GeneratedPluginRegistrant.register(with: self)
+
+        // Set up notification delegate so notifications show in foreground
+        UNUserNotificationCenter.current().delegate = self
 
         let controller = window?.rootViewController as! FlutterViewController
 
@@ -61,29 +65,39 @@ import UIKit
 
     private func getPendingUrls() -> [String] {
         guard let userDefaults = UserDefaults(suiteName: appGroupId) else {
+            #if DEBUG
             print("[ReadZero] ERROR: Failed to access App Group '\(appGroupId)' - check entitlements")
+            #endif
             return []
         }
         let urls = userDefaults.stringArray(forKey: pendingUrlsKey) ?? []
+        #if DEBUG
         print("[ReadZero] Retrieved \(urls.count) pending URLs from App Group")
         for (index, url) in urls.enumerated() {
             print("[ReadZero] URL[\(index)]: \(url)")
         }
+        #endif
         return urls
     }
 
     private func clearPendingUrls() {
         guard let userDefaults = UserDefaults(suiteName: appGroupId) else {
+            #if DEBUG
             print("[ReadZero] ERROR: Failed to access App Group '\(appGroupId)' for clearing")
+            #endif
             return
         }
         userDefaults.removeObject(forKey: pendingUrlsKey)
+        #if DEBUG
         print("[ReadZero] Cleared all pending URLs")
+        #endif
     }
 
     private func removeProcessedUrls(_ urlsToRemove: [String]) {
         guard let userDefaults = UserDefaults(suiteName: appGroupId) else {
+            #if DEBUG
             print("[ReadZero] ERROR: Failed to access App Group '\(appGroupId)' for removal")
+            #endif
             return
         }
 
@@ -103,6 +117,8 @@ import UIKit
             userDefaults.set(pendingUrls, forKey: pendingUrlsKey)
         }
 
+        #if DEBUG
         print("[ReadZero] Removed \(originalCount - pendingUrls.count) URLs, \(pendingUrls.count) remaining")
+        #endif
     }
 }

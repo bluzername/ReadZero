@@ -1,3 +1,4 @@
+import 'package:audio_session/audio_session.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 
@@ -31,6 +32,7 @@ class PodcastPlayerState {
 
 class PodcastPlayerNotifier extends StateNotifier<PodcastPlayerState> {
   AudioPlayer? _player;
+  bool _audioSessionConfigured = false;
 
   AudioPlayer get player {
     _player ??= AudioPlayer();
@@ -38,6 +40,13 @@ class PodcastPlayerNotifier extends StateNotifier<PodcastPlayerState> {
   }
 
   PodcastPlayerNotifier() : super(const PodcastPlayerState());
+
+  Future<void> _ensureAudioSession() async {
+    if (_audioSessionConfigured) return;
+    final session = await AudioSession.instance;
+    await session.configure(AudioSessionConfiguration.speech());
+    _audioSessionConfigured = true;
+  }
 
   Future<void> play(PodcastEpisode episode) async {
     if (state.episode?.id == episode.id) {
@@ -48,6 +57,7 @@ class PodcastPlayerNotifier extends StateNotifier<PodcastPlayerState> {
 
     state = PodcastPlayerState(episode: episode, isLoading: true);
     try {
+      await _ensureAudioSession();
       await player.setUrl(episode.audioUrl!);
       state = state.copyWith(isLoading: false, clearError: true);
       player.play();

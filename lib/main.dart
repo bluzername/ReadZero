@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/config/env.dart';
 import 'core/router/app_router.dart';
+import 'core/services/notification_service.dart';
 import 'core/theme/app_theme.dart';
-import 'core/services/auth_extraction_service.dart';
 import 'features/articles/providers/article_providers.dart';
 
 // Method channel for native communication
@@ -43,6 +42,9 @@ void main() async {
     debugPrint('Supabase not configured - running in offline mode');
   }
 
+  // Initialize local notifications
+  await NotificationService().init();
+
   runApp(const ProviderScope(child: ReadZeroApp()));
 }
 
@@ -62,6 +64,17 @@ class _ReadZeroAppState extends ConsumerState<ReadZeroApp> with WidgetsBindingOb
     // Check for pending URLs after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _processPendingUrls();
+    });
+    // Watch for new digests to trigger notifications
+    _watchDigests();
+  }
+
+  void _watchDigests() {
+    ref.listenManual(digestsStreamProvider, (previous, next) {
+      final digests = next.valueOrNull;
+      if (digests != null && digests.isNotEmpty) {
+        NotificationService().showDigestNotification(digests.first);
+      }
     });
   }
 
@@ -123,26 +136,6 @@ class _ReadZeroAppState extends ConsumerState<ReadZeroApp> with WidgetsBindingOb
     } catch (e) {
       debugPrint('[ReadZero] Error processing URLs: $e');
     }
-  }
-
-  void _showAuthPrompt(String provider, String url) {
-    print('[Flutter] _showAuthPrompt called for $provider');
-    final providerName = RestrictedDomains.getProviderName(provider);
-
-    // First show a snackbar to confirm the code is running
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$providerName requires login'),
-        duration: const Duration(seconds: 5),
-        action: SnackBarAction(
-          label: 'Login',
-          onPressed: () {
-            context.push('/auth/$provider?returnUrl=${Uri.encodeComponent(url)}');
-          },
-        ),
-      ),
-    );
-    print('[Flutter] SnackBar shown for $provider');
   }
 
   @override

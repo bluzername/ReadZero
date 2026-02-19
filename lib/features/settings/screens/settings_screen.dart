@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/config/env.dart';
+import '../../../core/services/notification_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../articles/providers/article_providers.dart';
 import '../providers/settings_providers.dart';
@@ -62,8 +63,13 @@ class SettingsScreen extends ConsumerWidget {
                   subtitle: 'Get notified when your daily digest is ready',
                   trailing: Switch(
                     value: settings.pushNotifications,
-                    onChanged: (value) {
+                    onChanged: (value) async {
+                      if (value) {
+                        final granted = await NotificationService().requestPermission();
+                        if (!granted) return;
+                      }
                       ref.read(settingsProvider.notifier).togglePushNotifications(value);
+                      await NotificationService().setEnabled(value);
                     },
                   ),
                 ),
@@ -87,24 +93,22 @@ class SettingsScreen extends ConsumerWidget {
                 data: (settings) => _SettingsTile(
                   icon: Icons.image_outlined,
                   title: 'Analyze Images',
-                  subtitle: 'Use AI to describe and analyze images in articles',
+                  subtitle: 'Use AI to describe and analyze images in articles (Coming Soon)',
                   trailing: Switch(
                     value: settings.analyzeImages,
-                    onChanged: (value) {
-                      ref.read(settingsProvider.notifier).toggleAnalyzeImages(value);
-                    },
+                    onChanged: null,
                   ),
                 ),
                 loading: () => _SettingsTile(
                   icon: Icons.image_outlined,
                   title: 'Analyze Images',
-                  subtitle: 'Use AI to describe and analyze images in articles',
+                  subtitle: 'Use AI to describe and analyze images in articles (Coming Soon)',
                   trailing: const Switch(value: true, onChanged: null),
                 ),
                 error: (_, __) => _SettingsTile(
                   icon: Icons.image_outlined,
                   title: 'Analyze Images',
-                  subtitle: 'Use AI to describe and analyze images in articles',
+                  subtitle: 'Use AI to describe and analyze images in articles (Coming Soon)',
                   trailing: const Switch(value: true, onChanged: null),
                 ),
               ),
@@ -112,24 +116,22 @@ class SettingsScreen extends ConsumerWidget {
                 data: (settings) => _SettingsTile(
                   icon: Icons.comment_outlined,
                   title: 'Include Comments',
-                  subtitle: 'Extract and summarize discussion threads',
+                  subtitle: 'Extract and summarize discussion threads (Coming Soon)',
                   trailing: Switch(
                     value: settings.includeComments,
-                    onChanged: (value) {
-                      ref.read(settingsProvider.notifier).toggleIncludeComments(value);
-                    },
+                    onChanged: null,
                   ),
                 ),
                 loading: () => _SettingsTile(
                   icon: Icons.comment_outlined,
                   title: 'Include Comments',
-                  subtitle: 'Extract and summarize discussion threads',
+                  subtitle: 'Extract and summarize discussion threads (Coming Soon)',
                   trailing: const Switch(value: true, onChanged: null),
                 ),
                 error: (_, __) => _SettingsTile(
                   icon: Icons.comment_outlined,
                   title: 'Include Comments',
-                  subtitle: 'Extract and summarize discussion threads',
+                  subtitle: 'Extract and summarize discussion threads (Coming Soon)',
                   trailing: const Switch(value: true, onChanged: null),
                 ),
               ),
@@ -251,7 +253,7 @@ class SettingsScreen extends ConsumerWidget {
               const _SettingsTile(
                 icon: Icons.info_outline,
                 title: 'Version',
-                subtitle: '1.0.0',
+                subtitle: '1.1.0',
               ),
               _SettingsTile(
                 icon: Icons.description_outlined,
