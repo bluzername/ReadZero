@@ -11,11 +11,27 @@ import '../../../core/theme/app_theme.dart';
 import '../../articles/providers/article_providers.dart';
 import '../../articles/widgets/source_placeholder.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  bool _hasWaited = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // After 4 seconds, allow showing the real error UI
+    Future.delayed(const Duration(seconds: 4), () {
+      if (mounted) setState(() => _hasWaited = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final articlesAsync = ref.watch(articlesStreamProvider);
     final pendingCount = ref.watch(pendingArticlesCountProvider);
 
@@ -85,28 +101,56 @@ class HomeScreen extends ConsumerWidget {
             },
             loading: () => SliverFillRemaining(
               child: Center(
-                child: CircularProgressIndicator(
-                  color: context.primaryColor,
-                ),
-              ),
-            ),
-            error: (error, stack) => SliverFillRemaining(
-              child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.error_outline, size: 48, color: context.mutedTextColor),
+                    CircularProgressIndicator(
+                      color: context.primaryColor,
+                    ),
                     const SizedBox(height: 16),
-                    Text('Failed to load articles', style: TextStyle(color: context.mutedTextColor)),
-                    const SizedBox(height: 8),
-                    TextButton(
-                      onPressed: () => ref.invalidate(articlesStreamProvider),
-                      child: const Text('Retry'),
+                    Text(
+                      'Loading your library...',
+                      style: TextStyle(color: context.mutedTextColor),
                     ),
                   ],
                 ),
               ),
             ),
+            error: (error, stack) => _hasWaited
+                ? SliverFillRemaining(
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.error_outline, size: 48, color: context.mutedTextColor),
+                          const SizedBox(height: 16),
+                          Text('Failed to load articles', style: TextStyle(color: context.mutedTextColor)),
+                          const SizedBox(height: 8),
+                          TextButton(
+                            onPressed: () => ref.invalidate(articlesStreamProvider),
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : SliverFillRemaining(
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(
+                            color: context.primaryColor,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Loading your library...',
+                            style: TextStyle(color: context.mutedTextColor),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
           ),
         ],
       ),
