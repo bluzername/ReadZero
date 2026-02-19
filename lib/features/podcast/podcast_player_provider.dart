@@ -30,7 +30,12 @@ class PodcastPlayerState {
 }
 
 class PodcastPlayerNotifier extends StateNotifier<PodcastPlayerState> {
-  final AudioPlayer player = AudioPlayer();
+  AudioPlayer? _player;
+
+  AudioPlayer get player {
+    _player ??= AudioPlayer();
+    return _player!;
+  }
 
   PodcastPlayerNotifier() : super(const PodcastPlayerState());
 
@@ -72,14 +77,12 @@ class PodcastPlayerNotifier extends StateNotifier<PodcastPlayerState> {
 
   @override
   void dispose() {
-    player.dispose();
+    _player?.dispose();
     super.dispose();
   }
 }
 
 final podcastPlayerProvider =
     StateNotifierProvider<PodcastPlayerNotifier, PodcastPlayerState>((ref) {
-  final notifier = PodcastPlayerNotifier();
-  ref.onDispose(() => notifier.dispose());
-  return notifier;
+  return PodcastPlayerNotifier();
 });
