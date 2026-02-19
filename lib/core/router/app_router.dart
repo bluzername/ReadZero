@@ -7,7 +7,6 @@ import '../../features/articles/screens/article_detail_screen.dart';
 import '../../features/digest/screens/digest_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../../features/settings/screens/archive_screen.dart';
-import '../../features/auth/screens/web_login_screen.dart';
 import '../../features/podcast/mini_player_widget.dart';
 
 final appRouter = GoRouter(
@@ -50,14 +49,6 @@ final appRouter = GoRouter(
       path: '/archive',
       name: 'archive',
       builder: (context, state) => const ArchiveScreen(),
-    ),
-    GoRoute(
-      path: '/auth/:provider',
-      name: 'auth',
-      builder: (context, state) => WebLoginScreen(
-        provider: state.pathParameters['provider']!,
-        returnUrl: state.uri.queryParameters['returnUrl'],
-      ),
     ),
   ],
 );
