@@ -51,5 +51,7 @@
 	<array>
 		<string>audio</string>
 	</array>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>ReadZero uses audio features for podcast playback.</string>
 </dict>
 </plist>
