@@ -1,6 +1,6 @@
 # Privacy Policy for ReadZero
 
-**Last Updated: February 19, 2026**
+**Last Updated: February 20, 2026**
 
 ## Introduction
 
@@ -39,15 +39,17 @@ ReadZero uses artificial intelligence to:
 - Extract key points and themes from your reading
 - Generate audio podcast episodes narrating your daily digests
 
-**Important**: Your saved content is processed by third-party AI services (Anthropic Claude) to generate summaries. This processing is done securely and content is not used to train AI models.
+**Important**: Your saved content is processed by third-party AI services (Anthropic Claude) to generate summaries. Digest summaries are processed by ElevenLabs to generate audio podcast episodes. This processing is done securely and content is not used to train AI models.
 
-## Audio and Podcast Generation
+## Audio and Podcast Content
 
 ReadZero generates personalized audio podcast episodes from your daily digests:
 - **Text-to-Speech**: Digest summaries are converted to audio using ElevenLabs, a third-party text-to-speech service. The text of your digest is sent to ElevenLabs for audio generation.
 - **Audio Storage**: Generated audio files are stored securely in Supabase Storage and are accessible only to you.
 - **RSS Feed**: A personal podcast RSS feed is generated for your account, allowing you to subscribe in any podcast app. This feed URL is unique to your account.
 - ElevenLabs processes only the text of your AI-generated digest summaries, not your original saved articles.
+- Audio content features AI-generated voices and may not perfectly represent the original content.
+- You can delete podcast episodes at any time along with your other data.
 
 ## Fallback Images
 

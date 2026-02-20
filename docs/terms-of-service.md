@@ -1,6 +1,6 @@
 # Terms of Service for ReadZero
 
-**Last Updated: February 19, 2026**
+**Last Updated: February 20, 2026**
 
 ## Agreement to Terms
 
@@ -46,10 +46,12 @@ You agree to use ReadZero only for lawful purposes and in accordance with these 
 
 ## Audio and Podcast Content
 
-- Podcast episodes are generated using AI text-to-speech technology
+- Podcast episodes are generated using AI text-to-speech technology (ElevenLabs)
 - Audio content is derived from your daily digest summaries, not from the original articles directly
 - The voices used in podcast episodes are AI-generated and do not represent real individuals
+- AI-generated audio may contain errors or mispronunciations
 - Podcast episodes are for your personal use only and should not be redistributed
+- We do not guarantee continuous availability of audio generation features
 
 ## Disclaimer of Warranties
 
