@@ -15,11 +15,10 @@ const _shareChannel = MethodChannel('com.readzero.app/share');
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Supabase (skip if not configured)
-  if (Env.supabaseUrl.isNotEmpty &&
-      !Env.supabaseUrl.contains('YOUR_') &&
-      Env.supabaseAnonKey.isNotEmpty &&
-      !Env.supabaseAnonKey.contains('YOUR_')) {
+  // Supabase URL/key come from --dart-define (see .env.example). Debug builds
+  // fail fast with a clear message; release builds log and run offline.
+  assert(Env.isConfigured, Env.missingConfigMessage);
+  if (Env.isConfigured) {
     try {
       await Supabase.initialize(
         url: Env.supabaseUrl,
@@ -39,7 +38,8 @@ void main() async {
       debugPrint('Supabase initialization failed: $e');
     }
   } else {
-    debugPrint('Supabase not configured - running in offline mode');
+    debugPrint('Supabase not configured - running in offline mode. '
+        '${Env.missingConfigMessage}');
   }
 
   // Initialize local notifications

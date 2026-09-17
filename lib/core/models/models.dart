@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../config/env.dart';
+
 /// Represents a saved article/webpage
 class Article {
   final String id;
@@ -556,7 +558,7 @@ class UserSettings {
 
   String? get podcastFeedUrl {
     if (podcastToken == null) return null;
-    return 'https://bioiacixxauufpvswlxe.supabase.co/functions/v1/podcast-feed?token=$podcastToken';
+    return '${Env.supabaseUrl}/functions/v1/podcast-feed?token=$podcastToken';
   }
 
   Map<String, dynamic> toJson() => {
