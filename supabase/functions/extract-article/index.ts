@@ -6,6 +6,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Readability } from "npm:@mozilla/readability@0.6.0";
 import { parseHTML } from "npm:linkedom@0.18.9";
+import { CLAUDE_MODEL, GROK_MODEL } from "../_shared/config.ts";
 
 const JINA_API_KEY = Deno.env.get("JINA_API_KEY");
 const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
@@ -15,8 +16,8 @@ const UNSPLASH_ACCESS_KEY = Deno.env.get("UNSPLASH_ACCESS_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-// Using Claude Haiku 3.5 via OpenRouter for cost efficiency
-const LLM_MODEL = "anthropic/claude-3.5-haiku";
+// Claude via OpenRouter (override with the CLAUDE_MODEL secret)
+const LLM_MODEL = CLAUDE_MODEL;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -126,7 +127,7 @@ function cleanTitle(title: string, url: string): string {
     // Remove " | Site Name" suffixes
     .replace(/\s*\|\s*[^|]{1,50}$/, '')
     // Remove " - Site Name" suffixes
-    .replace(/\s*[-–—]\s*[^-–—]{1,50}$/, '')
+    .replace(/\s*[-–-]\s*[^-–-]{1,50}$/, '')
     // Remove Reddit-style metadata "r/subreddit"
     .replace(/\s*:\s*r\/\w+\s*$/, '')
     // Remove comment counts "(123 comments)"
@@ -864,7 +865,7 @@ async function extractWithGrok(url: string): Promise<ExtractedData> {
   console.log(`[Grok] Parsed: @${username}, ID: ${postId}`);
 
   const requestBody = {
-    model: "grok-4-1-fast",
+    model: GROK_MODEL,
     tools: [
       {
         type: "x_search",
