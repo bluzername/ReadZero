@@ -15,6 +15,15 @@ GRANT USAGE ON SCHEMA cron TO postgres;
 -- ============================================
 -- Runs every day at 8 AM UTC
 -- Calls the generate-digest Edge Function
+--
+-- Before running: replace <SUPABASE_URL> with the project URL
+-- (https://<project-ref>.supabase.co) and <SUPABASE_ANON_KEY> with the
+-- project's anon key. The key is intentionally not committed here so that it
+-- is never baked into the repository or the cron job definition by accident.
+-- To avoid storing the key in cron.job at all, store it in Supabase Vault
+-- (select vault.create_secret('<key>', 'supabase_anon_key')) and build the
+-- header from (select decrypted_secret from vault.decrypted_secrets
+-- where name = 'supabase_anon_key') instead of the literal below.
 
 -- First, remove any existing job with the same name
 SELECT cron.unschedule('generate-daily-digests') WHERE EXISTS (
@@ -27,10 +36,10 @@ SELECT cron.schedule(
     '0 8 * * *',  -- Every day at 8:00 AM UTC
     $$
     SELECT net.http_post(
-        url := 'https://bioiacixxauufpvswlxe.supabase.co/functions/v1/generate-digest',
+        url := '<SUPABASE_URL>/functions/v1/generate-digest',
         headers := jsonb_build_object(
             'Content-Type', 'application/json',
-            'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpb2lhY2l4eGF1dWZwdnN3bHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2OTc2MzAsImV4cCI6MjA4NTI3MzYzMH0.rALzbiI5ggIQYOrcPC8VeRVyJO_0KNVtQCaVKz7d9cQ'
+            'Authorization', 'Bearer <SUPABASE_ANON_KEY>'
         ),
         body := '{}'::jsonb
     );

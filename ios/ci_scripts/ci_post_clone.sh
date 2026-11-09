@@ -39,6 +39,24 @@ else
   exit 1
 fi
 
+# Bake the build-time configuration into Generated.xcconfig (DART_DEFINES).
+# SUPABASE_URL and SUPABASE_ANON_KEY must be set as environment variables in
+# the Xcode Cloud workflow. `flutter pub get` above rewrote Generated.xcconfig
+# without defines, so this step must run after it.
+echo "=== Writing dart-defines into Generated.xcconfig ==="
+: "${SUPABASE_URL:?SUPABASE_URL must be set in the Xcode Cloud workflow environment}"
+: "${SUPABASE_ANON_KEY:?SUPABASE_ANON_KEY must be set in the Xcode Cloud workflow environment}"
+flutter build ios --config-only --release --no-codesign \
+  --dart-define=SUPABASE_URL="$SUPABASE_URL" \
+  --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY"
+
+if grep -q "^DART_DEFINES=" ios/Flutter/Generated.xcconfig; then
+  echo "=== DART_DEFINES written ==="
+else
+  echo "ERROR: DART_DEFINES missing from Generated.xcconfig"
+  exit 1
+fi
+
 # Install CocoaPods dependencies
 echo "=== Running pod install ==="
 cd ios

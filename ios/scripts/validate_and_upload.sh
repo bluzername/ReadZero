@@ -6,7 +6,7 @@ set -euo pipefail
 # Archives, exports, and uploads to App Store Connect.
 #
 # If ExportOptions.plist has destination=upload (default), the
-# export step uploads directly to ASC — no separate altool step.
+# export step uploads directly to ASC - no separate altool step.
 #
 # If you want local validation first, change ExportOptions.plist
 # destination to "export", then this script will validate via
@@ -22,15 +22,31 @@ PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 
 echo ""
 echo "╔══════════════════════════════════════════════════╗"
-echo "║   ReadZero — Build, Validate & Upload to ASC    ║"
+echo "║   ReadZero - Build, Validate & Upload to ASC    ║"
 echo "╚══════════════════════════════════════════════════╝"
 echo ""
 echo "Project: $PROJECT_ROOT"
 echo ""
 
+# ─── Step 0: Bake build-time config into Generated.xcconfig ──
+# The archive reads DART_DEFINES from ios/Flutter/Generated.xcconfig, which
+# `flutter pub get` rewrites without defines. Regenerate it from .env first.
+ENV_FILE="$PROJECT_ROOT/.env"
+if [ ! -f "$ENV_FILE" ]; then
+  echo "ERROR: $ENV_FILE not found."
+  echo "Copy .env.example to .env and set SUPABASE_URL and SUPABASE_ANON_KEY."
+  exit 1
+fi
+echo "=== Step 0: Write dart-defines from .env ==="
+cd "$PROJECT_ROOT"
+flutter build ios --config-only --release --no-codesign \
+  --dart-define-from-file="$ENV_FILE"
+echo "Config: OK"
+echo ""
+
 # ─── Step 1: Archive ─────────────────────────────────────────
 # xcodebuild archive runs Flutter's build phases automatically,
-# so a separate `flutter build ios` is not needed.
+# so a separate full `flutter build ios` is not needed.
 echo "=== Step 1: Xcode Archive ==="
 cd "$PROJECT_ROOT/ios"
 xcodebuild -workspace Runner.xcworkspace \
@@ -57,7 +73,7 @@ echo ""
 IPA_FILE=$(find build/ipa -name "*.ipa" -print -quit 2>/dev/null || true)
 
 if [ -n "$IPA_FILE" ]; then
-  # Local IPA exists — validate then upload via altool
+  # Local IPA exists - validate then upload via altool
   echo "IPA: $IPA_FILE"
   echo ""
 
@@ -76,13 +92,13 @@ if [ -n "$IPA_FILE" ]; then
     -f "$IPA_FILE" -t ios \
     -u "$APPLE_ID" -p "$APP_PASSWORD"
 else
-  # No local IPA — export already uploaded directly to ASC
-  echo "(ExportOptions destination=upload — build was uploaded during export)"
+  # No local IPA - export already uploaded directly to ASC
+  echo "(ExportOptions destination=upload - build was uploaded during export)"
 fi
 
 echo ""
 echo "╔══════════════════════════════════════════════════╗"
-echo "║   SUCCESS — Build uploaded to App Store Connect  ║"
+echo "║   SUCCESS - Build uploaded to App Store Connect  ║"
 echo "║   Check ASC in 15-30 min for processing.        ║"
 echo "╚══════════════════════════════════════════════════╝"
 echo ""

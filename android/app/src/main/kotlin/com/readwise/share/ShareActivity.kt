@@ -65,7 +65,7 @@ class ShareActivity : FlutterActivity() {
             
             if (url != null) {
                 // Show confirmation toast
-                Toast.makeText(this, "Saving to Readwise...", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Saving to ReadZero...", Toast.LENGTH_SHORT).show()
                 
                 return mapOf(
                     "type" to "url",
