@@ -22,7 +22,7 @@ dependencies:
   
   # Local Storage
   shared_preferences: ^2.2.2
-  path_provider: ^2.1.2
+  path_provider: ^2.1.6
   flutter_secure_storage: ^9.0.0
 
   # WebView for authenticated extraction
