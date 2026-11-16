@@ -11,8 +11,8 @@ cd "$CI_PRIMARY_REPOSITORY_PATH"
 echo "=== Changed to project root: $(pwd) ==="
 
 # Install Flutter (pinned to the version used locally)
-echo "=== Installing Flutter 3.27.3 ==="
-git clone https://github.com/flutter/flutter.git --depth 1 -b 3.27.3 "$HOME/flutter"
+echo "=== Installing Flutter 3.50.0 ==="
+git clone https://github.com/flutter/flutter.git --depth 1 -b 3.50.0 "$HOME/flutter"
 export PATH="$HOME/flutter/bin:$HOME/flutter/bin/cache/dart-sdk/bin:$PATH"
 
 echo "=== Flutter version ==="
