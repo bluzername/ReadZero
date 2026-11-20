@@ -26,7 +26,7 @@ dependencies:
   flutter_secure_storage: ^9.0.0
 
   # WebView for authenticated extraction
-  webview_flutter: ^4.4.2
+  webview_flutter: ^4.14.1
   
   # Networking
   dio: ^5.4.0
