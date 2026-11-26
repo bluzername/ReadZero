@@ -44,7 +44,7 @@ dependencies:
   # Notifications (Firebase temporarily disabled for Xcode 26 compatibility)
   # firebase_core: ^2.25.4
   # firebase_messaging: ^14.7.15
-  flutter_local_notifications: ^16.3.2
+  flutter_local_notifications: ^23.0.4
   
   # Audio Playback
   just_audio: ^0.10.6
