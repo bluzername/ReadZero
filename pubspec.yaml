@@ -39,7 +39,7 @@ dependencies:
   google_fonts: ^9.0.0
   
   # Share Extension Support
-  receive_sharing_intent: ^1.6.7
+  receive_sharing_intent: ^1.9.0
   
   # Notifications (Firebase temporarily disabled for Xcode 26 compatibility)
   # firebase_core: ^2.25.4
